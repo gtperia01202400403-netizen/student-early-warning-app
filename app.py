@@ -8,7 +8,7 @@ from sklearn.metrics import accuracy_score, roc_auc_score
 from sklearn.model_selection import train_test_split
 
 # ---------------------------------------------------------
-# Page Configuration
+# Page Configuration & Academic Institutional Theme
 # ---------------------------------------------------------
 st.set_page_config(
     page_title="Academic Early-Warning Decision Support System",
@@ -17,191 +17,108 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# ---------------------------------------------------------
-# Theme Toggle State (Light Mode / Dark Mode)
-# ---------------------------------------------------------
-if "theme_mode" not in st.session_state:
-    st.session_state.theme_mode = "Light Mode"
-
-with st.sidebar:
-    st.markdown("### Display Preferences")
-    theme_choice = st.radio(
-        "Interface Theme",
-        ["Light Mode", "Dark Mode"],
-        index=0 if st.session_state.theme_mode == "Light Mode" else 1,
-        horizontal=True,
-    )
-    st.session_state.theme_mode = theme_choice
-    st.markdown("---")
-
-is_dark = st.session_state.theme_mode == "Dark Mode"
-
-# Dynamic Palette Variables
-if is_dark:
-    bg_app = "#0b1120"
-    bg_sidebar = "#0f172a"
-    text_primary = "#f1f5f9"
-    text_secondary = "#cbd5e1"
-    text_muted = "#94a3b8"
-    card_bg = "#1e293b"
-    card_border = "#334155"
-    card_top_accent = "#38bdf8"
-    section_border = "#334155"
-    pass_bg = "#052e16"
-    pass_border = "#166534"
-    pass_accent = "#22c55e"
-    pass_title = "#86efac"
-    risk_bg = "#451a03"
-    risk_border = "#92400e"
-    risk_accent = "#f59e0b"
-    risk_title = "#fcd34d"
-    gov_bg = "#1e293b"
-    gov_border = "#334155"
-    gov_accent = "#38bdf8"
-    chart_color = "#38bdf8"
-else:
-    bg_app = "#f8fafc"
-    bg_sidebar = "#ffffff"
-    text_primary = "#0f172a"
-    text_secondary = "#1e293b"
-    text_muted = "#64748b"
-    card_bg = "#ffffff"
-    card_border = "#cbd5e1"
-    card_top_accent = "#1e3a5f"
-    section_border = "#e2e8f0"
-    pass_bg = "#f0fdf4"
-    pass_border = "#bbf7d0"
-    pass_accent = "#15803d"
-    pass_title = "#14532d"
-    risk_bg = "#fffbeb"
-    risk_border = "#fde68a"
-    risk_accent = "#b45309"
-    risk_title = "#78350f"
-    gov_bg = "#f1f5f9"
-    gov_border = "#cbd5e1"
-    gov_accent = "#1e3a5f"
-    chart_color = "#1e3a5f"
-
-# Inject Responsive Light/Dark Academic Styling
+# Academic Navy, Slate, & Warm Gold Palette
 st.markdown(
-    f"""
+    """
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Merriweather:wght@700&display=swap');
 
-    .stApp {{
-        background-color: {bg_app};
-        color: {text_primary};
+    html, body, [class*="css"] {
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-    }}
+        color: #1e293b;
+    }
 
-    [data-testid="stSidebar"] {{
-        background-color: {bg_sidebar};
-        border-right: 1px solid {card_border};
-    }}
-
-    [data-testid="stSidebar"] * {{
-        color: {text_primary};
-    }}
-
-    .stMarkdown, .stText, p, label, .stCaption {{
-        color: {text_secondary} !important;
-    }}
-
-    h1, h2, h3, h4 {{
-        color: {text_primary} !important;
-    }}
-
-    .block-container {{
+    .block-container {
         padding-top: 2rem;
         padding-bottom: 2.5rem;
         max-width: 1200px;
-    }}
+    }
 
     /* Institutional Header Banner */
-    .acad-header {{
+    .acad-header {
         background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%);
-        color: #ffffff !important;
+        color: #ffffff;
         padding: 1.75rem 2rem;
         border-radius: 0.6rem;
         border-bottom: 4px solid #b45309;
         margin-bottom: 1.5rem;
-        box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
-    }}
-    .acad-header .kicker {{
+        box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+    }
+    .acad-header .kicker {
         font-size: 0.78rem;
         text-transform: uppercase;
         letter-spacing: 0.1em;
-        color: #fbbf24 !important;
+        color: #fbbf24;
         font-weight: 600;
         margin-bottom: 0.35rem;
-    }}
-    .acad-header h1 {{
+    }
+    .acad-header h1 {
         font-family: 'Merriweather', Georgia, serif;
         font-size: 1.75rem;
         font-weight: 700;
-        color: #ffffff !important;
+        color: #ffffff;
         margin: 0 0 0.45rem 0;
         line-height: 1.25;
-    }}
-    .acad-header p {{
+    }
+    .acad-header p {
         font-size: 0.95rem;
-        color: #e2e8f0 !important;
+        color: #e2e8f0;
         margin: 0;
         max-width: 820px;
-    }}
+    }
 
     /* Section Headings */
-    .section-title {{
+    .section-title {
         font-family: 'Merriweather', Georgia, serif;
         font-size: 1.15rem;
         font-weight: 700;
-        color: {text_primary};
-        border-bottom: 2px solid {section_border};
+        color: #0f172a;
+        border-bottom: 2px solid #e2e8f0;
         padding-bottom: 0.45rem;
         margin-bottom: 1rem;
-    }}
+    }
 
     /* KPI Summary Cards */
-    .kpi-box {{
-        background-color: {card_bg};
-        border: 1px solid {card_border};
-        border-top: 3px solid {card_top_accent};
+    .kpi-box {
+        background-color: #ffffff;
+        border: 1px solid #cbd5e1;
+        border-top: 3px solid #1e3a5f;
         border-radius: 0.5rem;
         padding: 0.9rem 1.1rem;
-        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
-    }}
-    .kpi-label {{
+        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+    }
+    .kpi-label {
         font-size: 0.76rem;
         text-transform: uppercase;
         letter-spacing: 0.06em;
-        color: {text_muted};
+        color: #64748b;
         font-weight: 600;
         margin-bottom: 0.25rem;
-    }}
-    .kpi-val {{
+    }
+    .kpi-val {
         font-size: 1.45rem;
         font-weight: 700;
-        color: {text_primary};
-    }}
-    .kpi-sub {{
+        color: #0f172a;
+    }
+    .kpi-sub {
         font-size: 0.78rem;
-        color: {text_muted};
+        color: #475569;
         margin-top: 0.15rem;
-    }}
+    }
 
     /* Outcome Status Cards */
-    .status-pass {{
-        background-color: {pass_bg};
-        border: 1px solid {pass_border};
-        border-left: 6px solid {pass_accent};
+    .status-pass {
+        background-color: #f0fdf4;
+        border: 1px solid #bbf7d0;
+        border-left: 6px solid #15803d;
         padding: 1.25rem 1.4rem;
         border-radius: 0.5rem;
         margin-bottom: 1rem;
-    }}
-    .status-pass .badge {{
+    }
+    .status-pass .badge {
         display: inline-block;
-        background-color: {pass_accent};
-        color: #ffffff !important;
+        background-color: #15803d;
+        color: #ffffff;
         font-size: 0.72rem;
         font-weight: 700;
         letter-spacing: 0.07em;
@@ -209,26 +126,26 @@ st.markdown(
         padding: 0.2rem 0.6rem;
         border-radius: 0.25rem;
         margin-bottom: 0.5rem;
-    }}
-    .status-pass h3 {{
+    }
+    .status-pass h3 {
         font-family: 'Merriweather', Georgia, serif;
-        color: {pass_title} !important;
+        color: #14532d;
         margin: 0 0 0.5rem 0;
         font-size: 1.25rem;
-    }}
+    }
 
-    .status-risk {{
-        background-color: {risk_bg};
-        border: 1px solid {risk_border};
-        border-left: 6px solid {risk_accent};
+    .status-risk {
+        background-color: #fffbeb;
+        border: 1px solid #fde68a;
+        border-left: 6px solid #b45309;
         padding: 1.25rem 1.4rem;
         border-radius: 0.5rem;
         margin-bottom: 1rem;
-    }}
-    .status-risk .badge {{
+    }
+    .status-risk .badge {
         display: inline-block;
-        background-color: {risk_accent};
-        color: #ffffff !important;
+        background-color: #b45309;
+        color: #ffffff;
         font-size: 0.72rem;
         font-weight: 700;
         letter-spacing: 0.07em;
@@ -236,26 +153,26 @@ st.markdown(
         padding: 0.2rem 0.6rem;
         border-radius: 0.25rem;
         margin-bottom: 0.5rem;
-    }}
-    .status-risk h3 {{
+    }
+    .status-risk h3 {
         font-family: 'Merriweather', Georgia, serif;
-        color: {risk_title} !important;
+        color: #78350f;
         margin: 0 0 0.5rem 0;
         font-size: 1.25rem;
-    }}
+    }
 
     /* Governance / Ethics Note */
-    .gov-note {{
-        background-color: {gov_bg};
-        border: 1px solid {gov_border};
-        border-left: 4px solid {gov_accent};
+    .gov-note {
+        background-color: #f8fafc;
+        border: 1px solid #cbd5e1;
+        border-left: 4px solid #1e3a5f;
         padding: 0.95rem 1.1rem;
         border-radius: 0.45rem;
         font-size: 0.86rem;
-        color: {text_secondary};
+        color: #334155;
         line-height: 1.5;
         margin-top: 0.9rem;
-    }}
+    }
     </style>
     """,
     unsafe_allow_html=True,
@@ -504,11 +421,11 @@ with col_left:
             <div class="status-pass">
                 <span class="badge">Projected Outcome: Pass</span>
                 <h3>Satisfactory Academic Engagement</h3>
-                <p style="font-size:0.98rem; margin-bottom:0.6rem;">
+                <p style="font-size:0.98rem; color:#1e293b; margin-bottom:0.6rem;">
                     <strong>Estimated Pass Likelihood:</strong> {prob_pass:.1%} &nbsp;&bull;&nbsp;
                     <strong>Attrition Risk:</strong> {prob_fail:.1%}
                 </p>
-                <p style="font-size:0.9rem; margin-bottom:0;">
+                <p style="font-size:0.9rem; color:#334155; margin-bottom:0;">
                     <strong>Advising Guidance:</strong> Student LMS participation aligns with passing cohort benchmarks.
                     Maintain routine faculty check-ins.
                 </p>
@@ -522,11 +439,11 @@ with col_left:
             <div class="status-risk">
                 <span class="badge">Early-Warning Flag: At Risk</span>
                 <h3>Elevated Risk of Course Failure</h3>
-                <p style="font-size:0.98rem; margin-bottom:0.6rem;">
+                <p style="font-size:0.98rem; color:#1e293b; margin-bottom:0.6rem;">
                     <strong>Estimated Risk Score:</strong> {prob_fail:.1%} &nbsp;&bull;&nbsp;
                     <strong>Pass Likelihood:</strong> {prob_pass:.1%}
                 </p>
-                <p style="font-size:0.9rem; margin-bottom:0;">
+                <p style="font-size:0.9rem; color:#334155; margin-bottom:0;">
                     <strong>Advising Guidance:</strong> Prioritize for academic advisor outreach, tutoring referral,
                     and structured study-plan review.
                 </p>
@@ -596,7 +513,7 @@ with tab_feat:
         .sort_values("Importance", ascending=True)
         .set_index("Predictor")
     )
-    st.bar_chart(imp_df, horizontal=True, color=chart_color)
+    st.bar_chart(imp_df, horizontal=True, color="#1e3a5f")
 
 with tab_batch:
     st.markdown("**Batch Student Risk Screening**")
