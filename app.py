@@ -113,11 +113,8 @@ def train_model():
     y_pred = model.predict(X_test)
     y_prob = model.predict_proba(X_test)[:, 1]
 
-    eval_stats = {
-        "accuracy": accuracy_score(y_test, y_pred),
-        "roc_auc": roc_auc_score(y_test, y_prob),
-        "cm": confusion_matrix(y_test, y_pred),
-        "report": pd.DataFrame(
+    report_df = (
+        pd.DataFrame(
             classification_report(
                 y_test,
                 y_pred,
@@ -126,7 +123,16 @@ def train_model():
             )
         )
         .transpose()
-        .round(3),
+        .round(3)
+    )
+    report_df.loc["accuracy", ["precision", "recall"]] = np.nan
+    report_df.loc["accuracy", "support"] = int(len(y_test))
+
+    eval_stats = {
+        "accuracy": accuracy_score(y_test, y_pred),
+        "roc_auc": roc_auc_score(y_test, y_prob),
+        "cm": confusion_matrix(y_test, y_pred),
+        "report": report_df,
         "n_unique": len(df_clean),
         "n_test": len(y_test),
     }
