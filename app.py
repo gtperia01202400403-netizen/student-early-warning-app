@@ -1,228 +1,69 @@
-import os
 import numpy as np
 import pandas as pd
 import streamlit as st
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import (
-    accuracy_score,
-    classification_report,
-    confusion_matrix,
-    recall_score,
-    roc_auc_score,
-)
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix, roc_auc_score
 from sklearn.model_selection import train_test_split
 from sklearn.utils import resample
 
 # ---------------------------------------------------------
-# Page Configuration (Single Academic Light Theme - No Dark/Light Toggle)
+# Page Setup: Clean, Simple University Application
 # ---------------------------------------------------------
 st.set_page_config(
-    page_title="Academic Early-Warning Decision Support System",
-    page_icon="🏛️",
+    page_title="Student Pass/Fail Predictor",
+    page_icon="🎓",
     layout="wide",
-    initial_sidebar_state="expanded",
 )
 
-# ---------------------------------------------------------
-# Institutional Academic Styling
-# ---------------------------------------------------------
 st.markdown(
     """
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Merriweather:wght@700&display=swap');
-
     .stApp {
-        background-color: #f4f6f9;
+        background-color: #f8fafc;
         color: #1e293b;
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     }
-
-    /* Dark Navy Institutional Sidebar */
-    [data-testid="stSidebar"] {
-        background-color: #132238;
-        color: #f8fafc;
-        border-right: 1px solid #1e3a5f;
-    }
-    [data-testid="stSidebar"] h1,
-    [data-testid="stSidebar"] h2,
-    [data-testid="stSidebar"] h3,
-    [data-testid="stSidebar"] label,
-    [data-testid="stSidebar"] p,
-    [data-testid="stSidebar"] span,
-    [data-testid="stSidebar"] .stCaption {
-        color: #f1f5f9 !important;
-    }
-    [data-testid="stSidebar"] input {
-        color: #0f172a !important;
-        background-color: #ffffff !important;
-    }
-    [data-testid="stSidebar"] [data-baseweb="select"] div {
-        color: #0f172a !important;
-    }
-
-    .block-container {
-        padding-top: 1.5rem;
-        padding-bottom: 2.5rem;
-        max-width: 1260px;
-    }
-
-    /* Context Banner */
-    .context-banner {
-        background-color: #e8eef5;
-        border: 1px solid #cbd5e1;
-        border-left: 5px solid #1e3a5f;
-        border-radius: 0.45rem;
-        padding: 0.7rem 1.1rem;
-        margin-bottom: 1.1rem;
-        font-size: 0.88rem;
-        color: #1e293b;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    /* Institutional Header */
-    .acad-header {
-        background: linear-gradient(135deg, #132238 0%, #1e3a5f 100%);
+    .header-box {
+        background-color: #1e3a5f;
         color: #ffffff;
-        padding: 1.4rem 1.75rem;
-        border-radius: 0.55rem;
+        padding: 1.4rem 1.8rem;
+        border-radius: 0.5rem;
         border-bottom: 4px solid #b45309;
-        margin-bottom: 1.25rem;
-        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+        margin-bottom: 1.5rem;
     }
-    .acad-header .kicker {
-        font-size: 0.75rem;
-        text-transform: uppercase;
-        letter-spacing: 0.1em;
-        color: #fbbf24;
-        font-weight: 600;
-        margin-bottom: 0.3rem;
-    }
-    .acad-header h1 {
-        font-family: 'Merriweather', Georgia, serif;
-        font-size: 1.6rem;
-        font-weight: 700;
+    .header-box h1 {
         color: #ffffff !important;
         margin: 0 0 0.35rem 0;
+        font-size: 1.65rem;
     }
-    .acad-header p {
-        font-size: 0.9rem;
-        color: #e2e8f0;
+    .header-box p {
+        color: #e2e8f0 !important;
         margin: 0;
+        font-size: 0.95rem;
     }
-
-    /* Section Headings */
-    .section-title {
-        font-family: 'Merriweather', Georgia, serif;
-        font-size: 1.08rem;
-        font-weight: 700;
-        color: #0f172a;
-        border-bottom: 2px solid #cbd5e1;
-        padding-bottom: 0.4rem;
-        margin-bottom: 0.9rem;
-    }
-
-    /* KPI Cards */
-    .kpi-card {
-        background-color: #ffffff;
-        border: 1px solid #cbd5e1;
-        border-top: 3px solid #1e3a5f;
-        border-radius: 0.5rem;
-        padding: 0.85rem 1rem;
-        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
-    }
-    .kpi-card.alert-top {
-        border-top-color: #b45309;
-    }
-    .kpi-label {
-        font-size: 0.74rem;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        color: #64748b;
-        font-weight: 600;
-        margin-bottom: 0.2rem;
-    }
-    .kpi-value {
-        font-size: 1.4rem;
-        font-weight: 700;
-        color: #0f172a;
-    }
-    .kpi-sub {
-        font-size: 0.76rem;
-        color: #475569;
-        margin-top: 0.15rem;
-    }
-
-    /* Explicit PASS / FAIL Outcome Cards */
-    .outcome-pass {
+    .result-pass {
         background-color: #f0fdf4;
         border: 1px solid #86efac;
-        border-left: 7px solid #15803d;
-        border-radius: 0.55rem;
-        padding: 1.35rem 1.5rem;
-        margin-bottom: 1rem;
+        border-left: 6px solid #15803d;
+        padding: 1.25rem 1.5rem;
+        border-radius: 0.5rem;
+        margin-top: 1rem;
     }
-    .outcome-fail {
+    .result-fail {
         background-color: #fef2f2;
         border: 1px solid #fca5a5;
-        border-left: 7px solid #b91c1c;
-        border-radius: 0.55rem;
-        padding: 1.35rem 1.5rem;
-        margin-bottom: 1rem;
+        border-left: 6px solid #b91c1c;
+        padding: 1.25rem 1.5rem;
+        border-radius: 0.5rem;
+        margin-top: 1rem;
     }
-    .outcome-kicker {
-        font-size: 0.76rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        color: #475569;
-        margin-bottom: 0.2rem;
-    }
-    .outcome-label-pass {
-        font-family: 'Merriweather', Georgia, serif;
-        font-size: 2.1rem;
-        font-weight: 700;
-        color: #15803d;
-        line-height: 1.1;
-        margin-bottom: 0.35rem;
-    }
-    .outcome-label-fail {
-        font-family: 'Merriweather', Georgia, serif;
-        font-size: 2.1rem;
-        font-weight: 700;
-        color: #b91c1c;
-        line-height: 1.1;
-        margin-bottom: 0.35rem;
-    }
-    .outcome-mapping {
-        display: inline-block;
-        font-size: 0.78rem;
-        font-weight: 600;
-        padding: 0.2rem 0.55rem;
-        border-radius: 0.25rem;
-        background-color: #ffffff;
-        border: 1px solid #cbd5e1;
-        color: #334155;
-        margin-bottom: 0.75rem;
-    }
-    .prob-line {
-        font-size: 0.98rem;
-        color: #1e293b;
-        margin-bottom: 0.35rem;
-    }
-
-    /* Governance Box */
-    .gov-note {
-        background-color: #ffffff;
-        border: 1px solid #cbd5e1;
+    .disclaimer {
+        background-color: #f1f5f9;
         border-left: 4px solid #1e3a5f;
-        padding: 0.9rem 1.05rem;
-        border-radius: 0.45rem;
-        font-size: 0.85rem;
+        padding: 0.85rem 1rem;
+        border-radius: 0.4rem;
+        font-size: 0.88rem;
         color: #334155;
-        line-height: 1.5;
-        margin-top: 0.85rem;
+        margin-top: 1rem;
     }
     </style>
     """,
@@ -231,353 +72,213 @@ st.markdown(
 
 DATA_PATH = "augmented_balanced_dataset_m.csv"
 
-FEATURE_INFO = {
-    "Submission.Actions": {
-        "label": "Assignment Submissions",
-        "code": "Submission.Actions",
-        "help": "Count of coursework and assignment submission events recorded in the LMS.",
-        "min": 0,
-        "max": 100,
-        "default": 4,
-    },
-    "Quiz.Actions": {
-        "label": "Quiz & Assessment Activity",
-        "code": "Quiz.Actions",
-        "help": "Total quiz attempts, views, and formative assessment interactions.",
-        "min": 0,
-        "max": 1000,
-        "default": 15,
-    },
-    "Forum.Actions": {
-        "label": "Discussion Forum Participation",
-        "code": "Forum.Actions",
-        "help": "Posts, replies, and threads viewed or authored in course forums.",
-        "min": 0,
-        "max": 300,
-        "default": 5,
-    },
-    "Create.Actions": {
-        "label": "Content Creation Events",
-        "code": "Create.Actions",
-        "help": "Total authored items and creation events across LMS modules.",
-        "min": 0,
-        "max": 200,
-        "default": 8,
-    },
-    "Read.Actions": {
-        "label": "Course Resource Views",
-        "code": "Read.Actions",
-        "help": "Lecture notes, readings, and syllabus pages accessed in the LMS.",
-        "min": 0,
-        "max": 50000,
-        "default": 135,
-    },
-    "Update.Actions": {
-        "label": "Submission & Profile Revisions",
-        "code": "Update.Actions",
-        "help": "Edits or updates made to coursework submissions or forum entries.",
-        "min": 0,
-        "max": 500,
-        "default": 3,
-    },
-    "Delete.Actions": {
-        "label": "Deletion Events",
-        "code": "Delete.Actions",
-        "help": "Item deletion events recorded in the LMS activity log.",
-        "min": 0,
-        "max": 20,
-        "default": 0,
-    },
-    "Days.Logged.In": {
-        "label": "Active Login Days",
-        "code": "Days.Logged.In",
-        "help": "Number of distinct calendar days the student accessed the LMS.",
-        "min": 0,
-        "max": 90,
-        "default": 14,
-    },
-}
+FEATURE_COLS = [
+    "Submission.Actions",
+    "Quiz.Actions",
+    "Forum.Actions",
+    "Create.Actions",
+    "Read.Actions",
+    "Update.Actions",
+    "Delete.Actions",
+    "Days.Logged.In",
+]
 
 
 @st.cache_resource
-def load_and_evaluate(leakage_free: bool = True):
-    """
-    Loads the MP2 dataset (augmented_balanced_dataset_m.csv) and evaluates
-    Random Forest on an untouched 80/20 stratified holdout test set.
-
-    Target mapping:
-      rating == 'High' -> 1 (PASS: High Course Persistence / Likely to Pass)
-      rating == 'Low'  -> 0 (FAIL: Low Course Persistence / At-Risk of Failing)
-    """
+def train_model():
     raw_df = pd.read_csv(DATA_PATH)
-    feature_cols = list(FEATURE_INFO.keys())
+    # Remove duplicate rows before splitting so test metrics have zero data leakage
+    df_clean = raw_df.drop_duplicates().copy()
 
-    if leakage_free:
-        # Step 1: Deduplicate prior to splitting so synthetic/oversampled duplicates
-        # cannot leak across train and test partitions.
-        df_clean = raw_df.drop_duplicates().copy()
-        X = df_clean[feature_cols]
-        y = (df_clean["rating"] == "High").astype(int)
+    X = df_clean[FEATURE_COLS]
+    # Target mapping: High -> 1 (PASS), Low -> 0 (FAIL)
+    y = (df_clean["rating"] == "High").astype(int)
 
-        # Step 2: Split untouched test set first (80/20 stratified)
-        X_train, X_test, y_train, y_test = train_test_split(
-            X, y, test_size=0.2, random_state=42, stratify=y
-        )
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42, stratify=y
+    )
 
-        # Step 3: Apply random oversampling ONLY to the training partition
-        train_df = pd.concat([X_train, y_train.rename("target")], axis=1)
-        pass_train = train_df[train_df["target"] == 1]
-        fail_train = train_df[train_df["target"] == 0]
-        fail_upsampled = resample(
-            fail_train, replace=True, n_samples=len(pass_train), random_state=42
-        )
-        balanced_train = pd.concat([pass_train, fail_upsampled])
+    # Balance training set only
+    train_data = pd.concat([X_train, y_train.rename("target")], axis=1)
+    pass_rows = train_data[train_data["target"] == 1]
+    fail_rows = train_data[train_data["target"] == 0]
+    fail_upsampled = resample(
+        fail_rows, replace=True, n_samples=len(pass_rows), random_state=42
+    )
+    train_balanced = pd.concat([pass_rows, fail_upsampled])
 
-        model = RandomForestClassifier(n_estimators=200, random_state=42)
-        model.fit(balanced_train[feature_cols], balanced_train["target"])
-        eval_df = df_clean
-    else:
-        # Direct evaluation on the provided CSV file as-is
-        X = raw_df[feature_cols]
-        y = (raw_df["rating"] == "High").astype(int)
-        X_train, X_test, y_train, y_test = train_test_split(
-            X, y, test_size=0.2, random_state=42, stratify=y
-        )
-        model = RandomForestClassifier(n_estimators=200, random_state=42)
-        model.fit(X_train, y_train)
-        eval_df = raw_df
+    model = RandomForestClassifier(n_estimators=200, random_state=42)
+    model.fit(train_balanced[FEATURE_COLS], train_balanced["target"])
 
-    # Step 4: Evaluate on untouched holdout test set
     y_pred = model.predict(X_test)
     y_prob = model.predict_proba(X_test)[:, 1]
 
-    cm = confusion_matrix(y_test, y_pred)
-    report_dict = classification_report(
-        y_test, y_pred, target_names=["FAIL (Low)", "PASS (High)"], output_dict=True
-    )
-    report_df = pd.DataFrame(report_dict).transpose().round(3)
-
-    metrics = {
+    eval_stats = {
         "accuracy": accuracy_score(y_test, y_pred),
         "roc_auc": roc_auc_score(y_test, y_prob),
-        "fail_recall": recall_score(y_test, y_pred, pos_label=0),
-        "pass_recall": recall_score(y_test, y_pred, pos_label=1),
-        "n_raw": len(raw_df),
-        "n_unique": len(raw_df.drop_duplicates()),
-        "n_test": len(y_test),
-        "cm": cm,
-        "report_df": report_df,
-    }
-    medians = eval_df.groupby("rating")[feature_cols].median()
-    return model, raw_df, metrics, medians, feature_cols
-
-
-# ---------------------------------------------------------
-# Sidebar: Academic Navigation & Data/Validation Controls
-# ---------------------------------------------------------
-with st.sidebar:
-    st.markdown("### 🏛️ Academic Analytics")
-    st.caption("Student Success & Early-Warning Portal")
-    st.markdown("---")
-
-    nav_section = st.radio(
-        "Workspace View",
-        [
-            "Individual Student Assessment",
-            "Cohort Risk Screening (CSV)",
-            "Model Validation & Leakage Audit",
-            "Advising Interventions & Methodology",
-        ],
-    )
-
-    st.markdown("---")
-    st.markdown("**Data Integrity Mode**")
-    validation_mode = st.selectbox(
-        "Training & Evaluation Protocol",
-        [
-            "Leakage-Free Holdout (Deduplicated + Train-Only Oversampling)",
-            "Raw MP2 File Split (As-Provided 3,602 Rows)",
-        ],
-        help="Prevents duplicate rows created during pre-split balancing from leaking into the test partition.",
-    )
-    use_leakage_free = validation_mode.startswith("Leakage-Free")
-
-model, raw_df, metrics, medians, feature_cols = load_and_evaluate(
-    leakage_free=use_leakage_free
-)
-
-with st.sidebar:
-    st.markdown("---")
-    st.markdown("**Student LMS Predictors**")
-    preset = st.selectbox(
-        "Quick Profile Preset",
-        [
-            "Cohort Median Baseline",
-            "Exemplar PASS Profile",
-            "At-Risk FAIL Profile",
-        ],
-    )
-
-    preset_values = {
-        "Cohort Median Baseline": {k: v["default"] for k, v in FEATURE_INFO.items()},
-        "Exemplar PASS Profile": {
-            "Submission.Actions": 10,
-            "Quiz.Actions": 35,
-            "Forum.Actions": 12,
-            "Create.Actions": 14,
-            "Read.Actions": 320,
-            "Update.Actions": 6,
-            "Delete.Actions": 0,
-            "Days.Logged.In": 22,
-        },
-        "At-Risk FAIL Profile": {
-            "Submission.Actions": 1,
-            "Quiz.Actions": 2,
-            "Forum.Actions": 0,
-            "Create.Actions": 3,
-            "Read.Actions": 45,
-            "Update.Actions": 1,
-            "Delete.Actions": 0,
-            "Days.Logged.In": 6,
-        },
-    }
-
-    user_inputs = {}
-    for col in feature_cols:
-        meta = FEATURE_INFO[col]
-        user_inputs[col] = st.number_input(
-            label=f"{meta['label']} ({meta['code']})",
-            min_value=meta["min"],
-            max_value=meta["max"],
-            value=int(preset_values[preset][col]),
-            step=1,
-            help=meta["help"],
+        "cm": confusion_matrix(y_test, y_pred),
+        "report": pd.DataFrame(
+            classification_report(
+                y_test,
+                y_pred,
+                target_names=["FAIL (rating=Low)", "PASS (rating=High)"],
+                output_dict=True,
+            )
         )
+        .transpose()
+        .round(3),
+        "n_unique": len(df_clean),
+        "n_test": len(y_test),
+    }
+    return model, eval_stats
+
+
+model, eval_stats = train_model()
 
 # ---------------------------------------------------------
-# Top Context Banner & Institutional Header
+# Header
 # ---------------------------------------------------------
-mode_label = (
-    f"Leakage-Free Protocol Active ({metrics['n_unique']:,} deduplicated records; oversampling applied strictly to training fold)"
-    if use_leakage_free
-    else f"Raw CSV Split Active ({metrics['n_raw']:,} rows from augmented_balanced_dataset_m.csv)"
-)
-st.markdown(
-    f"""
-    <div class="context-banner">
-        <div><strong>Dataset &amp; Validation Status:</strong> {mode_label}</div>
-        <div><strong>Target Schema:</strong> <code>rating</code> &rarr; <strong>PASS</strong> (High) / <strong>FAIL</strong> (Low)</div>
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
-
 st.markdown(
     """
-    <div class="acad-header">
-        <div class="kicker">Office of Institutional Analytics &bull; Applied Data Science (MP3)</div>
-        <h1>Academic Early-Warning Decision Support System</h1>
-        <p>
-            Predicts binary student course outcomes (<strong>PASS</strong> vs. <strong>FAIL</strong>) from Learning Management System (LMS)
-            behavioral predictors to guide timely, advisor-led academic support.
-        </p>
+    <div class="header-box">
+        <h1>Student Pass / Fail Prediction Application</h1>
+        <p>Enter a student's LMS activity counts or upload a class CSV file to predict whether the student is likely to PASS or FAIL.</p>
     </div>
     """,
     unsafe_allow_html=True,
 )
 
 # ---------------------------------------------------------
-# Cohort & Holdout Evaluation Overview Strip
+# Simple 3-Tab Layout (Everything in the Main Area)
 # ---------------------------------------------------------
-c1, c2, c3, c4, c5 = st.columns(5)
-with c1:
-    st.markdown(
-        f"""
-        <div class="kpi-card">
-            <div class="kpi-label">Evaluation Sample</div>
-            <div class="kpi-value">{metrics['n_test']:,}</div>
-            <div class="kpi-sub">Untouched 20% holdout set</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-with c2:
-    st.markdown(
-        f"""
-        <div class="kpi-card">
-            <div class="kpi-label">Holdout Accuracy</div>
-            <div class="kpi-value">{metrics['accuracy']:.1%}</div>
-            <div class="kpi-sub">200 trees; stratified 80/20 split</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-with c3:
-    st.markdown(
-        f"""
-        <div class="kpi-card">
-            <div class="kpi-label">ROC-AUC Score</div>
-            <div class="kpi-value">{metrics['roc_auc']:.3f}</div>
-            <div class="kpi-sub">Threshold-independent discrimination</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-with c4:
-    st.markdown(
-        f"""
-        <div class="kpi-card alert-top">
-            <div class="kpi-label">FAIL Class Recall</div>
-            <div class="kpi-value">{metrics['fail_recall']:.1%}</div>
-            <div class="kpi-sub">Sensitivity to at-risk students</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-with c5:
-    st.markdown(
-        f"""
-        <div class="kpi-card">
-            <div class="kpi-label">PASS Class Recall</div>
-            <div class="kpi-value">{metrics['pass_recall']:.1%}</div>
-            <div class="kpi-sub">Specificity for persisting students</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
+tab_single, tab_batch, tab_model = st.tabs(
+    [
+        "1. Predict Single Student",
+        "2. Upload Class CSV (Batch Prediction)",
+        "3. Model Info & Validation",
+    ]
+)
+
+# =========================================================
+# TAB 1: Single Student Form (Simple Step-by-Step Inputs)
+# =========================================================
+with tab_single:
+    st.subheader("Enter Student LMS Activity Counts")
+    st.caption(
+        "Note: Because the MP2 dataset records LMS action counts rather than exam grades, enter the student's activity counts below."
     )
 
-st.markdown("<br>", unsafe_allow_html=True)
+    with st.form("single_student_form"):
+        col1, col2 = st.columns(2)
 
-# ---------------------------------------------------------
-# VIEW 1: Individual Student Assessment
-# ---------------------------------------------------------
-if nav_section == "Individual Student Assessment":
-    input_df = pd.DataFrame([user_inputs])
-    prob_pass = float(model.predict_proba(input_df)[0][1])
-    prob_fail = 1.0 - prob_pass
-    # Decision rule: P(PASS) >= 0.50 -> PASS, else FAIL
-    predicted_class = "PASS" if prob_pass >= 0.50 else "FAIL"
+        with col1:
+            st.markdown("**Coursework & Assessment Activity**")
+            sub_actions = st.number_input(
+                "Assignment Submissions (Submission.Actions)",
+                min_value=0,
+                max_value=200,
+                value=4,
+                step=1,
+                help="How many times the student submitted assignments in the LMS.",
+            )
+            quiz_actions = st.number_input(
+                "Quiz Interactions (Quiz.Actions)",
+                min_value=0,
+                max_value=1000,
+                value=15,
+                step=1,
+                help="How many quiz views or attempts the student recorded in the LMS.",
+            )
+            days_logged = st.number_input(
+                "Days Logged In (Days.Logged.In)",
+                min_value=0,
+                max_value=120,
+                value=14,
+                step=1,
+                help="Total distinct days the student logged into the LMS during the term.",
+            )
+            read_actions = st.number_input(
+                "Course Material Views (Read.Actions)",
+                min_value=0,
+                max_value=50000,
+                value=135,
+                step=1,
+                help="How many times the student opened/read course lessons or pages.",
+            )
 
-    col_left, col_right = st.columns([1.05, 1.35], gap="large")
+        with col2:
+            st.markdown("**Participation & File Activity**")
+            forum_actions = st.number_input(
+                "Forum Posts & Views (Forum.Actions)",
+                min_value=0,
+                max_value=500,
+                value=5,
+                step=1,
+                help="How many forum discussions the student viewed or posted in.",
+            )
+            create_actions = st.number_input(
+                "Items Created (Create.Actions)",
+                min_value=0,
+                max_value=300,
+                value=8,
+                step=1,
+                help="Total new submissions, posts, or items created in the LMS.",
+            )
+            update_actions = st.number_input(
+                "Items Updated / Edited (Update.Actions)",
+                min_value=0,
+                max_value=500,
+                value=3,
+                step=1,
+                help="Total edits or updates made to LMS items.",
+            )
+            delete_actions = st.number_input(
+                "Items Deleted (Delete.Actions)",
+                min_value=0,
+                max_value=50,
+                value=0,
+                step=1,
+                help="Total items deleted by the student in the LMS.",
+            )
 
-    with col_left:
-        st.markdown(
-            '<div class="section-title">I. Predicted Student Outcome</div>',
-            unsafe_allow_html=True,
+        submitted = st.form_submit_button(
+            "Predict Student Outcome", type="primary", use_container_width=True
         )
-        if predicted_class == "PASS":
+
+    if submitted:
+        student_row = pd.DataFrame(
+            [
+                {
+                    "Submission.Actions": sub_actions,
+                    "Quiz.Actions": quiz_actions,
+                    "Forum.Actions": forum_actions,
+                    "Create.Actions": create_actions,
+                    "Read.Actions": read_actions,
+                    "Update.Actions": update_actions,
+                    "Delete.Actions": delete_actions,
+                    "Days.Logged.In": days_logged,
+                }
+            ]
+        )
+
+        prob_pass = float(model.predict_proba(student_row)[0][1])
+        prob_fail = 1.0 - prob_pass
+        outcome = "PASS" if prob_pass >= 0.50 else "FAIL"
+
+        if outcome == "PASS":
             st.markdown(
                 f"""
-                <div class="outcome-pass">
-                    <div class="outcome-kicker">Predicted Student Outcome</div>
-                    <div class="outcome-label-pass">PASS</div>
-                    <div class="outcome-mapping">Source Dataset Label: <code>rating = High</code> (High Course Persistence)</div>
-                    <div class="prob-line"><strong>Estimated probability of passing:</strong> {prob_pass:.1%}</div>
-                    <div class="prob-line"><strong>Estimated probability of failing:</strong> {prob_fail:.1%}</div>
-                    <p style="font-size:0.86rem; color:#334155; margin-top:0.65rem; margin-bottom:0;">
-                        <strong>Decision Rule:</strong> Classified as <strong>PASS</strong> because P(PASS) = {prob_pass:.1%} &ge; 50.0% threshold.
-                        Routine faculty monitoring recommended.
-                    </p>
+                <div class="result-pass">
+                    <div style="font-size:0.85rem; font-weight:700; color:#475569;">PREDICTED STUDENT OUTCOME</div>
+                    <div style="font-size:2.2rem; font-weight:800; color:#15803d; margin:0.2rem 0;">PASS</div>
+                    <div style="font-size:1rem; margin-bottom:0.3rem;">
+                        <strong>Estimated probability of passing:</strong> {prob_pass:.1%} &nbsp;|&nbsp;
+                        <strong>Estimated probability of failing:</strong> {prob_fail:.1%}
+                    </div>
+                    <div style="font-size:0.88rem; color:#334155;">
+                        <strong>Explanation:</strong> Mapped from dataset label <code>rating = High</code> (High Course Persistence).
+                        Classified as <strong>PASS</strong> because P(PASS) &ge; 50.0%.
+                    </div>
                 </div>
                 """,
                 unsafe_allow_html=True,
@@ -585,167 +286,132 @@ if nav_section == "Individual Student Assessment":
         else:
             st.markdown(
                 f"""
-                <div class="outcome-fail">
-                    <div class="outcome-kicker">Predicted Student Outcome</div>
-                    <div class="outcome-label-fail">FAIL</div>
-                    <div class="outcome-mapping">Source Dataset Label: <code>rating = Low</code> (Low Persistence / Early-Warning Flag)</div>
-                    <div class="prob-line"><strong>Estimated probability of passing:</strong> {prob_pass:.1%}</div>
-                    <div class="prob-line"><strong>Estimated probability of failing:</strong> {prob_fail:.1%}</div>
-                    <p style="font-size:0.86rem; color:#334155; margin-top:0.65rem; margin-bottom:0;">
-                        <strong>Decision Rule:</strong> Classified as <strong>FAIL</strong> because risk score P(FAIL) = {prob_fail:.1%} &gt; 50.0% threshold.
-                        Recommended for academic advisor outreach and tutoring support.
-                    </p>
+                <div class="result-fail">
+                    <div style="font-size:0.85rem; font-weight:700; color:#475569;">PREDICTED STUDENT OUTCOME</div>
+                    <div style="font-size:2.2rem; font-weight:800; color:#b91c1c; margin:0.2rem 0;">FAIL</div>
+                    <div style="font-size:1rem; margin-bottom:0.3rem;">
+                        <strong>Estimated probability of passing:</strong> {prob_pass:.1%} &nbsp;|&nbsp;
+                        <strong>Estimated probability of failing:</strong> {prob_fail:.1%}
+                    </div>
+                    <div style="font-size:0.88rem; color:#334155;">
+                        <strong>Explanation:</strong> Mapped from dataset label <code>rating = Low</code> (At-Risk / Low Persistence).
+                        Classified as <strong>FAIL</strong> because P(FAIL) &gt; 50.0%. Recommended for advisor outreach.
+                    </div>
                 </div>
                 """,
                 unsafe_allow_html=True,
             )
 
-        st.progress(prob_pass, text=f"Estimated Probability of Passing: {prob_pass:.1%}")
-
         st.markdown(
             """
-            <div class="gov-note">
-                <strong>Human-in-the-Loop Safeguard:</strong>
-                <em>The model prioritizes advising attention; academic personnel decide what support is appropriate.</em>
-                Predictions serve strictly as early-warning decision support and must not be used for automated grading or punitive action.
+            <div class="disclaimer">
+                <strong>Advisor Note:</strong> This prediction is intended to guide early academic support and advising,
+                not to replace instructor grading or automatically penalize students.
             </div>
             """,
             unsafe_allow_html=True,
         )
 
-    with col_right:
-        st.markdown(
-            '<div class="section-title">II. Student Predictors vs. Cohort Benchmarks</div>',
-            unsafe_allow_html=True,
-        )
-        importances = dict(zip(feature_cols, model.feature_importances_))
-        rows = []
-        for col in feature_cols:
-            rows.append(
-                {
-                    "LMS Predictor": FEATURE_INFO[col]["label"],
-                    "Student Input": user_inputs[col],
-                    "PASS Median (High)": int(medians.loc["High", col]),
-                    "FAIL Median (Low)": int(medians.loc["Low", col]),
-                    "Feature Weight": f"{importances[col]:.1%}",
-                }
-            )
-        st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
-
-        st.markdown("**Global Predictor Importance (Random Forest)**")
-        imp_df = (
-            pd.DataFrame(
-                {
-                    "Predictor": [FEATURE_INFO[c]["label"] for c in feature_cols],
-                    "Importance": model.feature_importances_,
-                }
-            )
-            .sort_values("Importance", ascending=True)
-            .set_index("Predictor")
-        )
-        st.bar_chart(imp_df, horizontal=True, color="#1e3a5f")
-
-# ---------------------------------------------------------
-# VIEW 2: Cohort Risk Screening (CSV)
-# ---------------------------------------------------------
-elif nav_section == "Cohort Risk Screening (CSV)":
+# =========================================================
+# TAB 2: Batch CSV Upload (For Multiple Students)
+# =========================================================
+with tab_batch:
+    st.subheader("Predict Outcomes for a Whole Class (CSV Upload)")
     st.markdown(
-        '<div class="section-title">Cohort Batch Risk Screening</div>',
-        unsafe_allow_html=True,
-    )
-    st.markdown(
-        "Upload a student roster CSV containing the eight LMS activity columns to generate **PASS / FAIL** predictions and risk probabilities."
-    )
-    uploaded = st.file_uploader("Upload Student LMS CSV", type=["csv"])
-    if uploaded is not None:
-        batch_df = pd.read_csv(uploaded)
-        missing = [c for c in feature_cols if c not in batch_df.columns]
-        if missing:
-            st.error(f"Missing required columns: {', '.join(missing)}")
-        else:
-            probs_pass = model.predict_proba(batch_df[feature_cols])[:, 1]
-            probs_fail = 1.0 - probs_pass
-            outcomes = np.where(probs_pass >= 0.50, "PASS", "FAIL")
-
-            res_df = batch_df.copy()
-            res_df["Predicted_Outcome"] = outcomes
-            res_df["Prob_PASS"] = np.round(probs_pass, 4)
-            res_df["Prob_FAIL"] = np.round(probs_fail, 4)
-
-            s1, s2, s3 = st.columns(3)
-            s1.metric("Students Screened", f"{len(res_df):,}")
-            s2.metric("Predicted PASS", f"{int((outcomes == 'PASS').sum()):,}")
-            s3.metric("Predicted FAIL (At-Risk)", f"{int((outcomes == 'FAIL').sum()):,}")
-
-            st.dataframe(res_df, use_container_width=True)
-            st.download_button(
-                "Download Batch Screening Results (CSV)",
-                data=res_df.to_csv(index=False).encode("utf-8"),
-                file_name="student_pass_fail_predictions.csv",
-                mime="text/csv",
-            )
-
-# ---------------------------------------------------------
-# VIEW 3: Model Validation & Leakage Audit
-# ---------------------------------------------------------
-elif nav_section == "Model Validation & Leakage Audit":
-    st.markdown(
-        '<div class="section-title">Untouched Holdout Evaluation &amp; Leakage Audit</div>',
-        unsafe_allow_html=True,
-    )
-    st.markdown(
-        f"""
-        To ensure reported metrics are reliable and free of data leakage, this panel displays evaluation results computed
-        exclusively on the **untouched 20% holdout test set** ($n = {metrics['n_test']}$ students) under the active protocol:
-        **`{validation_mode}`**.
+        """
+        Upload a CSV file containing your students' LMS activity counts. The file must include these **8 exact column names**:
+        `Submission.Actions`, `Quiz.Actions`, `Forum.Actions`, `Create.Actions`, `Read.Actions`, `Update.Actions`, `Delete.Actions`, `Days.Logged.In`.
         """
     )
 
-    col_cm, col_cr = st.columns([1.0, 1.3], gap="large")
+    sample_template = pd.DataFrame(
+        [
+            {
+                "Submission.Actions": 10,
+                "Quiz.Actions": 35,
+                "Forum.Actions": 12,
+                "Create.Actions": 14,
+                "Read.Actions": 320,
+                "Update.Actions": 6,
+                "Delete.Actions": 0,
+                "Days.Logged.In": 22,
+            },
+            {
+                "Submission.Actions": 1,
+                "Quiz.Actions": 2,
+                "Forum.Actions": 0,
+                "Create.Actions": 3,
+                "Read.Actions": 45,
+                "Update.Actions": 1,
+                "Delete.Actions": 0,
+                "Days.Logged.In": 6,
+            },
+        ]
+    )
+    st.download_button(
+        "Download Sample CSV Template",
+        data=sample_template.to_csv(index=False).encode("utf-8"),
+        file_name="sample_student_lms_template.csv",
+        mime="text/csv",
+    )
+
+    uploaded_file = st.file_uploader("Choose a CSV file", type=["csv"])
+    if uploaded_file is not None:
+        batch_df = pd.read_csv(uploaded_file)
+        missing_cols = [c for c in FEATURE_COLS if c not in batch_df.columns]
+        if missing_cols:
+            st.error(f"Your file is missing these required columns: {', '.join(missing_cols)}")
+        else:
+            probs_pass = model.predict_proba(batch_df[FEATURE_COLS])[:, 1]
+            probs_fail = 1.0 - probs_pass
+            outcomes = np.where(probs_pass >= 0.50, "PASS", "FAIL")
+
+            out_df = batch_df.copy()
+            out_df["Predicted_Outcome"] = outcomes
+            out_df["Pass_Probability"] = np.round(probs_pass, 4)
+            out_df["Fail_Probability"] = np.round(probs_fail, 4)
+
+            c1, c2, c3 = st.columns(3)
+            c1.metric("Total Students", len(out_df))
+            c2.metric("Predicted PASS", int((outcomes == "PASS").sum()))
+            c3.metric("Predicted FAIL", int((outcomes == "FAIL").sum()))
+
+            st.dataframe(out_df, use_container_width=True)
+            st.download_button(
+                "Download Predictions CSV",
+                data=out_df.to_csv(index=False).encode("utf-8"),
+                file_name="student_pass_fail_results.csv",
+                mime="text/csv",
+            )
+
+# =========================================================
+# TAB 3: Model Info & Validation (Holdout Metrics)
+# =========================================================
+with tab_model:
+    st.subheader("Model Methodology & Holdout Validation")
+    st.markdown(
+        f"""
+        - **Dataset:** `augmented_balanced_dataset_m.csv` ({eval_stats['n_unique']:,} unique student records after deduplication).
+        - **Target Variable Mapping:** `rating = High` is mapped to **PASS** (`1`), and `rating = Low` is mapped to **FAIL** (`0`).
+        - **Algorithm & Split:** Random Forest Classifier (200 trees; stratified 80/20 train-test split, with oversampling applied strictly to the training set to prevent data leakage).
+        """
+    )
+
+    m1, m2, m3 = st.columns(3)
+    m1.metric("Holdout Accuracy", f"{eval_stats['accuracy']:.1%}")
+    m2.metric("ROC-AUC Score", f"{eval_stats['roc_auc']:.3f}")
+    m3.metric("Untouched Test Samples", f"{eval_stats['n_test']:,} students")
+
+    col_cm, col_cr = st.columns(2)
     with col_cm:
-        st.markdown("**Confusion Matrix (Holdout Test Set)**")
+        st.markdown("**Confusion Matrix (Untouched Test Set)**")
         cm_df = pd.DataFrame(
-            metrics["cm"],
+            eval_stats["cm"],
             index=["Actual FAIL (Low)", "Actual PASS (High)"],
             columns=["Predicted FAIL", "Predicted PASS"],
         )
         st.dataframe(cm_df, use_container_width=True)
-        st.caption(
-            "Rows represent true outcomes in the untouched holdout set; columns represent Random Forest predictions at threshold 0.50."
-        )
 
     with col_cr:
-        st.markdown("**Classification Report (Precision, Recall, F1-Score)**")
-        st.dataframe(metrics["report_df"], use_container_width=True)
-
-    st.info(
-        f"**Dataset Audit Note:** `augmented_balanced_dataset_m.csv` contains {metrics['n_raw']:,} total rows "
-        f"({metrics['n_unique']:,} unique records and {metrics['n_raw'] - metrics['n_unique']:,} duplicate rows from pre-split balancing). "
-        "Selecting the **Leakage-Free Holdout** option in the sidebar deduplicates records before splitting 80/20 and applies "
-        "random oversampling strictly inside the training set so no duplicate rows leak into the test evaluation."
-    )
-
-# ---------------------------------------------------------
-# VIEW 4: Advising Interventions & Methodology
-# ---------------------------------------------------------
-elif nav_section == "Advising Interventions & Methodology":
-    st.markdown(
-        '<div class="section-title">Target Variable Mapping &amp; Advising Protocol</div>',
-        unsafe_allow_html=True,
-    )
-    st.markdown(
-        """
-        ### 1. Alignment Between Dataset Target (`rating`) and Assignment (`PASS` / `FAIL`)
-        - **Source Dataset (`augmented_balanced_dataset_m.csv`):** Encodes student course persistence/performance as `rating` with two classes: `High` and `Low`.
-        - **Operational Mapping:**
-          - **`High` &rarr; `PASS`:** Student LMS engagement matches patterns of successful course completion ($P(\text{PASS}) \ge 0.50$).
-          - **`Low` &rarr; `FAIL`:** Student LMS engagement matches patterns of course non-completion / failure risk ($P(\text{FAIL}) = 1 - P(\text{PASS}) > 0.50$).
-
-        ### 2. Tiered Advisor Intervention Framework
-        | Risk Tier | Probability Threshold | Recommended Institutional Action |
-        | :--- | :--- | :--- |
-        | **Tier 1: Satisfactory (`PASS`)** | $P(\text{FAIL}) < 0.50$ | Routine LMS progress tracking; standard faculty feedback. |
-        | **Tier 2: Moderate Early Warning (`FAIL`)** | $0.50 \le P(\text{FAIL}) < 0.75$ | Academic advisor check-in email and peer tutoring referral. |
-        | **Tier 3: High Early Warning (`FAIL`)** | $P(\text{FAIL}) \ge 0.75$ | Priority 1-on-1 advising conference and structured study-plan contract. |
-        """
-    )
+        st.markdown("**Classification Report**")
+        st.dataframe(eval_stats["report"], use_container_width=True)
